@@ -100,16 +100,27 @@ class CFWJM_Admin {
 				}
 				exit;
 			}
-			if(isset($_REQUEST['action'])  && $_REQUEST['action'] == 'delete_field_cfwjm'){
-				$post_id = sanitize_text_field($_REQUEST['id']);
-				$post_data = array(
-									'ID'          => $post_id,
-									'post_status' => 'trash'
-									);
-				wp_update_post( $post_data );
-				wp_redirect( admin_url( 'admin.php?page=cfwjm-fields&msg=success') );
-				exit;
+			if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'delete_field_cfwjm') {
+			    // Verify nonce
+			    if (!isset($_REQUEST['_wpnonce']) || !wp_verify_nonce($_REQUEST['_wpnonce'], 'delete_field_cfwjm_nonce')) {
+			        wp_die(__('Security check failed.', 'cfwjm'));
+			    }
+
+			    // Sanitize and delete post
+			    $post_id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
+			    if ($post_id > 0) {
+			        $post_data = array(
+			            'ID'          => $post_id,
+			            'post_status' => 'trash'
+			        );
+			        wp_update_post($post_data);
+			    }
+
+			    // Redirect after deletion
+			    wp_redirect(admin_url('admin.php?page=cfwjm-fields&msg=success'));
+			    exit;
 			}
+
 		}
 	}
 	public function CFWJM_admin_menu () {
@@ -222,7 +233,7 @@ class CFWJM_Admin {
 							<tr>
 								<th scope="row"><label>OutPut</label></th>
 								<td>
-									<textarea  class="regular-text textheighs" name="field_output_cfwjm" placeholder='<div class="cfwjm_output"><strong>{label} : </strong>{value}</div>'><?php echo $field_output_cfwjm;?></textarea>
+									<textarea  class="regular-text textheighs" name="field_output_cfwjm" placeholder='<div class="cfwjm_output"><strong>{label} : </strong>{value}</div>'><?php echo esc_html($field_output_cfwjm);?></textarea>
 									<p class="description">{label} = Field Name <br> {value}  = Field Value<br> <strong>If you not setup this field than default html format will be use</strong></p>
 								</td>
 							</tr>
@@ -231,7 +242,7 @@ class CFWJM_Admin {
 						
 						<p class="submit">
 							<input type="hidden" name="action" value="update_new_field_cfwjm">
-							<input type="hidden" name="edit_id" value="<?php echo $id;?>" >
+							<input type="hidden" name="edit_id" value="<?php echo esc_attr($id);?>" >
 							<input type="submit" name="submit"  class="button button-primary" value="Save">
 						</p>
 					</form>
@@ -273,7 +284,10 @@ class CFWJM_Admin {
 				<td><?php echo get_post_meta( get_the_ID(), 'field_ordernumber_cfwjm', true ); ?></td>
 				<td>
 					<a class="button button-icon tips icon-edit" href="<?php echo admin_url( 'admin.php?page=cfwjm-fields&action=edit-cfwjm-fields&id='.get_the_ID());?>" ><?php _e('Edit', 'cfwjm'); ?></a>
-					<a class="button button-icon tips icon-delete" href="<?php echo admin_url( 'admin.php?action=delete_field_cfwjm&id='.get_the_ID());?>" ><?php _e('Delete', 'cfwjm'); ?></a>
+					<a class="button button-icon tips icon-delete" href="<?php echo wp_nonce_url( admin_url( 'admin.php?action=delete_field_cfwjm&id=' . get_the_ID() ), 'delete_field_cfwjm_nonce' ); ?>">
+					    <?php _e('Delete', 'cfwjm'); ?>
+					</a>
+
 				</td>
 			</tr>
 			<?php

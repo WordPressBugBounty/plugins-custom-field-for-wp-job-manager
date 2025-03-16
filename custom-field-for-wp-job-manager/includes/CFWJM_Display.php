@@ -73,21 +73,24 @@ class CFWJM_Display {
 				$field_output_cfwjm = trim(get_post_meta( $post_id, 'field_output_cfwjm', true ));
 
 				if ($c_value) {
-					if($field_output_cfwjm!=''){
-						$field_output_cfwjm = str_replace("{label}",$postslistv->post_title,$field_output_cfwjm);
-						$field_output_cfwjm = str_replace("{value}",$c_value,$field_output_cfwjm);
-						 echo $modifiedHTML = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', html_entity_decode($field_output_cfwjm));
-					}else{
-						if($metavalue=='single_job_listing_meta_start' || $metavalue=='single_job_listing_meta_end'){
-							$htmlforte = '<li class="cfwjm_output"><strong>%s : </strong> %s</li>';
-						}else{
-							$htmlforte = '<div class="cfwjm_output"><strong>%s : </strong> %s</div>';
-						}
-						printf( $htmlforte , $postslistv->post_title ,esc_html( $c_value ));	
-					}
-					
-					
+				    if (!empty($field_output_cfwjm)) {
+				        // Replace placeholders with sanitized values
+				        $field_output_cfwjm = str_replace("{label}", esc_html($postslistv->post_title), $field_output_cfwjm);
+				        $field_output_cfwjm = str_replace("{value}", esc_html($c_value), $field_output_cfwjm);
+
+				        // Decode HTML entities and sanitize output to allow only safe HTML
+				        echo wp_kses_post(html_entity_decode($field_output_cfwjm));
+				    } else {
+				        // Determine the appropriate template based on metavalue
+				        $template = ($metavalue === 'single_job_listing_meta_start' || $metavalue === 'single_job_listing_meta_end') 
+				                    ? '<li class="cfwjm_output"><strong>%s : </strong> %s</li>' 
+				                    : '<div class="cfwjm_output"><strong>%s : </strong> %s</div>';
+				        
+				        // Output the sanitized title and value
+				        printf($template, esc_html($postslistv->post_title), esc_html($c_value));
+				    }
 				}
+
 				
 			}
 		}

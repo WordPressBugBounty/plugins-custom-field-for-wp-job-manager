@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Custom Field For WP Job Manager
  * Description: Custom field can be add in wp job manager like text field , select field
- * Version:     1.3
+ * Version:     1.5
  * Author:      Gravity Master
  * License:     GPLv2 or later
  * Text Domain: cfwjm
