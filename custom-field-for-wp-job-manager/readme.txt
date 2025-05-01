@@ -1,5 +1,5 @@
 === Custom Field For WP Job Manager===
-Tested up to: 6.7.1
+Tested up to: 6.8
 Tags: Wp job Manager extra field, Wp job Manager, wp job manager field, custom  field wp job manager
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
