@@ -23,6 +23,21 @@ class CFWJM_Global {
 			'single_job_listing_end' => 'single_job_listing_end',
 			'hide' => 'Hide',
 		);
+		$CFWJM_Global['fieldset_arr'] = array(
+			'text' => 'Text',
+			'number' => 'Number',
+			'range' => 'Range (slider)',
+			'email' => 'Email',
+			'url' => 'URL',
+			'telephone' => 'Telephone',
+			'select' => 'Select',
+			'multiselect' => 'Multi Select',
+			'radio' => 'Radio',
+			'checkbox' => 'Checkbox',
+			'file' => 'File',
+			'textarea' => 'Textarea',
+			'wp_editor' => 'Wp editor'
+		);
 
 	}
 }

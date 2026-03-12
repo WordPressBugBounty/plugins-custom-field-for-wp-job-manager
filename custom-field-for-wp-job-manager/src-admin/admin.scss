@@ -1,0 +1,43 @@
+.active-tab {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    border-bottom: 2px solid #007cba;
+}
+.m-10{
+    margin:10px;
+}
+.mb-10{
+    margin-bottom:10px;
+}
+.mt-10{
+    margin-top:10px;
+}
+.ml-10{
+    margin-left:10px;
+}
+.GMadminTable{
+    text-align:left;
+    width:100%;
+}
+.GMadminTable th,.GMadminTable td{
+    vertical-align: top;
+    padding: 10px;
+}
+.GMadminTable th{
+    font-weight: 500;
+    font-size: 13px;
+    width: 300px;
+}
+.gmwqp_flex{
+    display:flex;
+    gap: 5px;
+}
+.gmwqp_disabled{
+    opacity:0.6;
+}
+h2.components-panel__body-title {
+    background: #eee;
+}
+.errormsg{
+    color:red;
+}

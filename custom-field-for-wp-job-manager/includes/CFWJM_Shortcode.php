@@ -7,35 +7,39 @@
 class CFWJM_Shortcode {
 	
 	public function __construct () {
-
 		add_shortcode( 'cm_fieldshow', array( $this, 'cm_fieldshow' ) );
 	}
 	
 	function cm_fieldshow($atts, $content = ""){
+		// Ensure attributes are set
+		$atts = shortcode_atts(array(
+			'key'    => '',
+			'job_id' => ''
+		), $atts);
 
-		if($atts['key']==''){
+		// Check if key is provided
+		if (empty($atts['key'])) {
 			return 'Please Enter Key in Shortcode';
 		}
-		if ( get_post_type($atts['job_id']) != 'job_listing' ) {
+
+		// Get job ID
+		global $post;
+		$jobid = !empty($atts['job_id']) ? $atts['job_id'] : $post->ID;
+
+		// Validate post type
+		if (get_post_type($jobid) != 'job_listing') {
 			return 'Post Type is Not Correct';
 		}
-		ob_start();
-		global $post;
-		$htmlforte = '<span class="cfwjm_output_shotcode">%s</span>';
-		if($atts['job_id']==''){
-			$jobid = $post->ID;
-		}else{
-			$jobid = $atts['job_id'];
+
+		// Get field value
+		$c_value = get_post_meta($jobid, $atts['key'], true);
+
+		// Handle array values
+		if (is_array($c_value)) {
+			$c_value = implode(', ', $c_value);
 		}
-		$c_value = get_post_meta( $jobid, $atts['key'], true );
-		if(is_array($c_value)){
-			printf( $htmlforte , esc_html( implode(', ',$c_value) ));
-		}else{
-			printf( $htmlforte , esc_html( $c_value ));
-		}
-		
-		
-		$content = ob_get_clean();
-		return $content;
+
+		// Format output with allowed HTML
+		return sprintf('<span class="cfwjm_output_shortcode">%s</span>', wp_kses_post($c_value));
 	}
 }

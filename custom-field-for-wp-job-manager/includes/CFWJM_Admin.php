@@ -4,34 +4,155 @@
 * to display the Admin to box.
 */
 class CFWJM_Admin {
-	public $fieldset_arr = array();
-	public $diable_arr = array();
+	
 	public function __construct () {
-		$this->fieldset_arr = array(
-			'text' => 'Text',
-			'select' => 'Select',
-			'multiselect' => 'Multi Select',
-			'radio' => 'Radio',
-			'checkbox' => 'Checkbox',
-			'date' => 'Date',
-			'file' => 'File',
-			'textarea' => 'Textarea',
-			'wp_editor' => 'Wp editor'
-		);
-		$this->diable_arr = array('radio','checkbox','select','multiselect','date','file','wp_editor');
 		
 		add_action( 'init', array( $this, 'CFWJM_init' ) );
 		add_action( 'admin_menu', array( $this, 'CFWJM_admin_menu' ) );
 		add_action('admin_enqueue_scripts', array( $this, 'CFWJM_admin_script' ));
+		// Admin dynamic field hooks moved to `CFWJM_Admin_Renderers` class
+		// Admin renderers are registered by `CFWJM_Admin_Renderers` class instantiated in the main plugin file
 		if ( is_admin() ) {
 			return;
 		}
+
+		
 		
 	}
-	public function CFWJM_admin_script () {
-		wp_enqueue_style('cfwjm_admin_css', CFWJM_PLUGINURL.'css/admin-style.css');
-		wp_enqueue_script('cfwjm_admin_js', CFWJM_PLUGINURL.'js/admin-script.js');
+	
+	public function CFWJM_admin_script ($hook) {
+
+		if($hook=='toplevel_page_cfwjm-fields'){
+			global $CFWJM_Global;
+			wp_enqueue_style('wp-components');
+			wp_register_script(
+	            'cfwjm-react-admin',
+	            CFWJM_PLUGINURL.'/build/admin/admin.js', // Adjust the path if necessary
+		        ['wp-element','wp-dom-ready','wp-components'], // Ensure this depends on WordPress's React
+		        '1.0',
+		        true
+
+		        );
+
+			
+	        wp_localize_script('cfwjm-react-admin', 'cfwjm_wp_ajax', [
+	            'nonce' => wp_create_nonce('wp_rest'), 
+	            'get_fields' => rest_url('cfwjm/v1/get_fields'),
+	            'add_field' => rest_url('cfwjm/v1/add_field'),
+	            'update_field' => rest_url('cfwjm/v1/update_field'),
+	            'delete_field' => rest_url('cfwjm/v1/delete_field'),
+	            'site_url' => get_site_url(),
+	            'fieldset_arr' => $CFWJM_Global['fieldset_arr'],
+	            'display_loc_arr' => $CFWJM_Global['display_loc_arr'],
+	            
+	        ]);
+
+			wp_enqueue_script('cfwjm-react-admin');
+
+		    wp_enqueue_style(
+		            'cfwjm-react-admin-style',
+		            CFWJM_PLUGINURL.'/build/admin/admin.css',
+		            array(),
+		            1,
+		        );
+			
+		}
+
 	}
+
+	/**
+	 * Dynamically add custom fields (stored as wpjmcf posts) to the Job meta box in admin
+	 */
+	public function add_dynamic_admin_fields( $fields ) {
+		$args = array(
+				'post_type' => 'wpjmcf',
+				'post_status' => 'publish',
+				'meta_key' => 'field_ordernumber_cfwjm',
+				'orderby' => 'meta_value_num',
+				'order' => 'ASC',
+				'posts_per_page' => -1,
+		);
+		$postslist = get_posts( $args );
+		if ( ! empty( $postslist ) ) {
+			foreach ( $postslist as $pl ) {
+				$post_id = $pl->ID;
+				$c_type = get_post_meta( $post_id, 'field_type_cfwjm', true );
+				$c_key = '_field_cfwjm' . $post_id;
+				$placeholder_meta = get_post_meta( $post_id, 'field_placeholder_cfwjm', true );
+
+				$input_type = '';
+					switch ($c_type) {
+						case 'number':
+							$input_type = 'number';
+							break;
+						case 'range':
+							$input_type = 'range';
+							break;
+						case 'email':
+							$input_type = 'email';
+							break;
+						case 'url':
+							$input_type = 'url';
+							break;
+						case 'telephone':
+							$input_type = 'tel';
+							break;
+						case 'select':
+							$input_type = 'select';
+							break;
+						case 'multiselect':
+							$input_type = 'multiselect';
+							break;
+						case 'radio':
+							$input_type = 'radio';
+							break;
+						case 'checkbox':
+							$input_type = 'checkbox';
+							break;
+						case 'file':
+							$input_type = 'file';
+							break;
+						case 'textarea':
+							$input_type = 'textarea';
+							break;
+						case 'wp_editor':
+							$input_type = 'wp-editor';
+							break;	
+						default:
+							$input_type = 'text';
+					}
+				$field_arr = array(
+					'label'       => $pl->post_title,
+					'type'        => $input_type,
+					'placeholder' => $placeholder_meta ? $placeholder_meta : $pl->post_title,
+					'priority'    => 20,
+				);
+				// options for select/radio/multiselect
+				if ( in_array( $c_type, array( 'select', 'radio', 'multiselect' ) ) ) {
+					$field_option_cfwjm = get_post_meta( $post_id, 'field_option_cfwjm', true );
+					$field_option_cfwjmar = explode( "\n", $field_option_cfwjm );
+					$field_option_cfwjmarr = array();
+					foreach ( $field_option_cfwjmar as $valuea ) {
+						$valuea = str_replace(array("\r", "\n"), '', $valuea);
+						if ( strlen( trim( $valuea ) ) ) {
+							$field_option_cfwjmarr[ $valuea ] = $valuea;
+						}
+					}
+					if ( ! empty( $field_option_cfwjmarr ) ) {
+						$field_arr['options'] = $field_option_cfwjmarr;
+					}
+				}
+				// required
+				$field_required_cfwjm = get_post_meta( $post_id, 'field_required_cfwjm', true );
+				if ( $field_required_cfwjm == 'yes' || $field_required_cfwjm == 'on' ) {
+					$field_arr['required'] = true;
+				}
+				$fields[ $c_key ] = $field_arr;
+			}
+		}
+		return $fields;
+	}
+
 	public function CFWJM_init () {
 		$args = array(
 					'label'               => __( 'wpjmcf', 'cfwjm' ),
@@ -48,357 +169,38 @@ class CFWJM_Admin {
 	
 		// Registering your Custom Post Type
 		register_post_type( 'wpjmcf', $args );
-		if( current_user_can('administrator') ) {
-			if(isset($_REQUEST['action']) && $_REQUEST['action'] == 'add_new_field_cfwjm'){
-				if(!isset( $_REQUEST['cfwjm_nonce_field_add'] ) || !wp_verify_nonce( $_POST['cfwjm_nonce_field_add'], 'cfwjm_nonce_action_add' ) ){
-	                print 'Sorry, your nonce did not verify.';
-	                exit;
-	            }else{
-					$post_data = array(
-										'post_title' => sanitize_text_field($_REQUEST['field_name_cfwjm']),
-										'post_type' => 'wpjmcf',
-										'post_status' => 'publish'
-										);
-						$post_id = wp_insert_post( $post_data );
-						update_post_meta( $post_id, 'field_type_cfwjm', sanitize_text_field($_REQUEST['field_type_cfwjm']) );
-						update_post_meta( $post_id, 'field_location_cfwjm', sanitize_text_field($_REQUEST['field_location_cfwjm']) );
-						update_post_meta( $post_id, 'field_location_show_cfwjm', sanitize_text_field($_REQUEST['field_location_show_cfwjm']) );
-						update_post_meta( $post_id, 'field_ordernumber_cfwjm', sanitize_text_field($_REQUEST['field_ordernumber_cfwjm']) );
-						
-						update_post_meta( $post_id, 'field_required_cfwjm', sanitize_text_field($_REQUEST['field_required_cfwjm']) );
-						$textToStore = htmlentities($_REQUEST['field_option_cfwjm'], ENT_QUOTES, 'UTF-8');
-						update_post_meta( $post_id, 'field_option_cfwjm', $textToStore );
-						/*$field_output_cfwjm = htmlentities($_REQUEST['field_output_cfwjm'], ENT_QUOTES, 'UTF-8');*/
-						$field_output_cfwjm = wp_kses_post($_REQUEST['field_output_cfwjm'], ENT_QUOTES, 'UTF-8'); 
-						update_post_meta( $post_id, 'field_output_cfwjm', $field_output_cfwjm );
-						wp_redirect( admin_url( 'admin.php?page=cfwjm-fields&msg=success') );
-					exit;
-				}
-			}
-			if(isset($_REQUEST['action'])  && $_REQUEST['action'] == 'update_new_field_cfwjm'){
-				if(!isset( $_REQUEST['cfwjm_nonce_field_edit'] ) || !wp_verify_nonce( $_POST['cfwjm_nonce_field_edit'], 'cfwjm_nonce_action_edit' ) ){
-	                print 'Sorry, your nonce did not verify.';
-	                exit;
-	            }else{
-					$post_id = sanitize_text_field($_REQUEST['id']);
-					$post_data = array(
-										'ID'           => $post_id,
-										'post_title' => sanitize_text_field($_REQUEST['field_name_cfwjm']),
-										);
-					wp_update_post( $post_data );
-					update_post_meta( $post_id, 'field_type_cfwjm', sanitize_text_field($_REQUEST['field_type_cfwjm']) );
-					update_post_meta( $post_id, 'field_ordernumber_cfwjm', sanitize_text_field($_REQUEST['field_ordernumber_cfwjm']) );
-					
-					update_post_meta( $post_id, 'field_location_cfwjm', sanitize_text_field($_REQUEST['field_location_cfwjm']) );
-					update_post_meta( $post_id, 'field_location_show_cfwjm', sanitize_text_field($_REQUEST['field_location_show_cfwjm']) );
-					update_post_meta( $post_id, 'field_required_cfwjm', sanitize_text_field($_REQUEST['field_required_cfwjm']) );
-					$textToStore = htmlentities($_REQUEST['field_option_cfwjm'], ENT_QUOTES, 'UTF-8');
-					update_post_meta( $post_id, 'field_option_cfwjm', $textToStore );
-					$field_output_cfwjm = htmlentities($_REQUEST['field_output_cfwjm'], ENT_QUOTES, 'UTF-8');
-					update_post_meta( $post_id, 'field_output_cfwjm', $field_output_cfwjm );
-					wp_redirect( admin_url( 'admin.php?page=cfwjm-fields&msg=success') );
-				}
-				exit;
-			}
-			if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'delete_field_cfwjm') {
-			    // Verify nonce
-			    if (!isset($_REQUEST['_wpnonce']) || !wp_verify_nonce($_REQUEST['_wpnonce'], 'delete_field_cfwjm_nonce')) {
-			        wp_die(__('Security check failed.', 'cfwjm'));
-			    }
-
-			    // Sanitize and delete post
-			    $post_id = isset($_REQUEST['id']) ? intval($_REQUEST['id']) : 0;
-			    if ($post_id > 0) {
-			        $post_data = array(
-			            'ID'          => $post_id,
-			            'post_status' => 'trash'
-			        );
-			        wp_update_post($post_data);
-			    }
-
-			    // Redirect after deletion
-			    wp_redirect(admin_url('admin.php?page=cfwjm-fields&msg=success'));
-			    exit;
-			}
-
-		}
+		
 	}
 	public function CFWJM_admin_menu () {
 		add_menu_page('Custom Field For WP Job Manager', 'Custom Field For WP Job Manager', 'manage_options', 'cfwjm-fields', array( $this, 'CFWJM_page' ));
-		/*add_submenu_page( 'theme-options', 'Settings page title', 'Settings menu label', 'manage_options', 'theme-op-settings', 'wps_theme_func_settings');*/
-		/*add_submenu_page( 'theme-options', 'FAQ page title', 'FAQ menu label', 'manage_options', 'theme-op-faq', 'wps_theme_func_faq');
-		add_options_page('WP Job Google Location', 'WP Job Google Location', 'manage_options', 'CFWJM', array( $this, 'CFWJM_page' ));*/
 	}
 	public function CFWJM_page() {
 		global $CFWJM_Global;
-?>
-<div class="wrap">
-	<div class="headingmc">
-		<h1 class="wp-heading-inline"><?php _e('WP Job Manager Custom Field', 'cfwjm'); ?></h1>
-		<a href="#" class="page-title-action addnewfielcfqjm"><?php _e('Add New Field', 'cfwjm'); ?></a>
-	</div>
-	<hr class="wp-header-end">
-	<?php if(isset($_REQUEST['msg'])  && $_REQUEST['msg'] == 'success'){ ?>
-        <div class="notice notice-success is-dismissible"> 
-            <p><strong><?php _e('WP Job Manager Custom Field Table Updated', 'cfwjm'); ?></strong></p>
-        </div>
-    <?php } ?>
-	<?php
-	if(isset($_REQUEST['action'])  && $_REQUEST['action']=='edit-cfwjm-fields'){
-		$id = esc_attr($_REQUEST['id']);
-		$postdata = get_post( $id );
-		$field_type_cfwjm = get_post_meta( $id, 'field_type_cfwjm', true );
-		$field_location_cfwjm = get_post_meta( $id, 'field_location_cfwjm', true );
-		$field_option_cfwjm = get_post_meta( $id, 'field_option_cfwjm', true );
-		$field_location_show_cfwjm = get_post_meta( $id, 'field_location_show_cfwjm', true );
-		$field_required_cfwjm = get_post_meta( $id, 'field_required_cfwjm', true );
-		$field_output_cfwjm = get_post_meta( $id, 'field_output_cfwjm', true );
-		$field_ordernumber_cfwjm = get_post_meta( $id, 'field_ordernumber_cfwjm', true );
-		
-		
-		?>
-		<div class="postbox">
-				
-				<div class="inside">
-					<form action="#" method="post" id="wp_job_custom_form">
-						<?php wp_nonce_field( 'cfwjm_nonce_action_edit', 'cfwjm_nonce_field_edit' ); ?>
-						<h3><?php _e('WP Job Manager Custom Field Edit', 'cfwjm'); ?></h3>
-						<table class="form-table">
-							<tr>
-								<th scope="row"><label>Field Type</label></th>
-								<td>
-									<select name="field_type_cfwjm" class="field_type_cfwjm" >
-										<?php
-										foreach ($this->fieldset_arr as $fieldset_arrk => $fieldset_arrv) {
-											echo '<option value="'.$fieldset_arrk.'" '.(($field_type_cfwjm==$fieldset_arrk)?'selected':'').' '.(in_array($fieldset_arrk, $this->diable_arr)?'disabled':'').'>'.$fieldset_arrv.'</option>';
-										}
-										?>
-										
-									</select><br>
-									<a href="https://www.codesmade.com/store/custom-field-for-wp-job-manager-pro/" target="_blank">Get Pro For Radio, Select, Date, File and checkbox field</a>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Location</label></th>
-								<td>
-									<select name="field_location_cfwjm" class="field_location_cfwjm" >
-										<option value="job" <?php echo (($field_location_cfwjm=='job')?'selected':'')?>>Job</option>
-										<option value="company" <?php echo (($field_location_cfwjm=='company')?'selected':'')?>>Company</option>
-										
-									</select>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Name</label></th>
-								<td>
-									<input type="text" required value="<?php echo esc_attr($postdata->post_title);?>" class="regular-text" name="field_name_cfwjm">
-								</td>
-							</tr>
-							<?php
-							$opincud = array('select','radio','multiselect');
-							?>
-							<tr class="cfwjm_option" style="<?php echo (in_array($field_type_cfwjm, $opincud)?'':'display: none;');?>">
-								<th scope="row"><label>Field Option</label></th>
-								<td>
-									<textarea  class="regular-text textheighs" name="field_option_cfwjm" placeholder="Option 1&#10;Option 2"><?php echo $field_option_cfwjm;?></textarea>
-									<p class="description">Per Line add one Option</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Order Number</label></th>
-								<td>
-									<input type="number" required value="<?php echo esc_attr($field_ordernumber_cfwjm);?>" class="regular-text" name="field_ordernumber_cfwjm">
-									<p class="description">Add digit where you can ordering field up down</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Show Location</label></th>
-								<td>
-									<select name="field_location_show_cfwjm" class="field_location_cfwjm">
-										<?php
-										foreach ($CFWJM_Global['display_loc_arr'] as $key_display_loc_arr => $value_display_loc_arr) {
-											echo '<option value="'.$key_display_loc_arr.'" '.(($field_location_show_cfwjm==$key_display_loc_arr)?'selected':'').'>'.$value_display_loc_arr.'</option>';
-										}
-										?>
-									</select>
-									<p class="description">This will be show where you need to show this field</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Required</label></th>
-								<td>
-									<input type="checkbox"  class="regular-text" <?php echo (($field_required_cfwjm=='on')?'checked':'');?> name="field_required_cfwjm">
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>OutPut</label></th>
-								<td>
-									<textarea  class="regular-text textheighs" name="field_output_cfwjm" placeholder='<div class="cfwjm_output"><strong>{label} : </strong>{value}</div>'><?php echo esc_html($field_output_cfwjm);?></textarea>
-									<p class="description">{label} = Field Name <br> {value}  = Field Value<br> <strong>If you not setup this field than default html format will be use</strong></p>
-								</td>
-							</tr>
-							
-						</table>
-						
-						<p class="submit">
-							<input type="hidden" name="action" value="update_new_field_cfwjm">
-							<input type="hidden" name="edit_id" value="<?php echo esc_attr($id);?>" >
-							<input type="submit" name="submit"  class="button button-primary" value="Save">
-						</p>
-					</form>
-				</div>
-			</div>
-		<?php
-	}else{
 	?>
-	<table class="wp-list-table widefat fixed striped posts">
-		<thead>
-			<tr>
-				<th>Field Name</th>
-				<th>Field Type</th>
-				<th>Field Location</th>
-				<th>Key Meta</th>
-				<th>Field Order Number</th>
-				<th>Required</th>
-				<th>Action</th>
-			</tr>
-		</thead>
-		<tbody>
-			<?php
-			$args = array(
-					'post_type' => 'wpjmcf',
-					'post_status' => 'publish',
-					'posts_per_page' => -1
-					);
-			$the_query = new WP_Query( $args );
-			while ( $the_query->have_posts() ) : $the_query->the_post();
-				$post_id = get_the_ID();
-				$field_required_cfwjm = get_post_meta( get_the_ID(), 'field_required_cfwjm', true );
-			?>
-			<tr>
-				<td><?php the_title(); ?></td>
-				<td><?php echo get_post_meta( get_the_ID(), 'field_type_cfwjm', true ); ?></td>
-				<td><?php echo get_post_meta( get_the_ID(), 'field_location_cfwjm', true ); ?></td>
-				<td>_field_cfwjm<?php echo $post_id; ?></td>
-				<td><?php echo (($field_required_cfwjm=='on')?'Yes':'No');?></td>
-				<td><?php echo get_post_meta( get_the_ID(), 'field_ordernumber_cfwjm', true ); ?></td>
-				<td>
-					<a class="button button-icon tips icon-edit" href="<?php echo admin_url( 'admin.php?page=cfwjm-fields&action=edit-cfwjm-fields&id='.get_the_ID());?>" ><?php _e('Edit', 'cfwjm'); ?></a>
-					<a class="button button-icon tips icon-delete" href="<?php echo wp_nonce_url( admin_url( 'admin.php?action=delete_field_cfwjm&id=' . get_the_ID() ), 'delete_field_cfwjm_nonce' ); ?>">
-					    <?php _e('Delete', 'cfwjm'); ?>
-					</a>
-
-				</td>
-			</tr>
-			<?php
-			endwhile;
-			wp_reset_postdata();
-			?>
-		</tbody>
-	</table>
-	
-	</div>
-	<?php
-	}
-	?>
-	<div class="notice notice-success"> 
-            <p>ShortCode <strong>[cm_fieldshow key='_field_cfwjm13' job_id='15']</strong> in that key is mandatory and if you not add <strong>job_id</strong> than take default job post id. </p>
-    </div>
-</div>
-
-<div class="showpopmain">
-		<div class="popupinner">
-			<div class="postbox">
-				<a class="closeicond" href="#"><span class="dashicons dashicons-no"></span></a>
-				<div class="inside">
-					<form action="#" method="post" id="wp_job_custom_form">
-						<?php wp_nonce_field( 'cfwjm_nonce_action_add', 'cfwjm_nonce_field_add' ); ?>
-						<h3><?php _e('WP Job Manager Custom Field Add', 'cfwjm'); ?></h3>
-						<table class="form-table">
-							<tr>
-								<th scope="row"><label>Field Type</label></th>
-								<td>
-									<select name="field_type_cfwjm" class="field_type_cfwjm">
-										<?php
-										foreach ($this->fieldset_arr as $fieldset_arrk => $fieldset_arrv) {
-											echo '<option '.(in_array($fieldset_arrk, $this->diable_arr)?'disabled':'').' value="'.$fieldset_arrk.'">'.$fieldset_arrv.'</option>';
-										}
-										?>
-										
-									</select><br>
-									<a href="https://www.codesmade.com/store/custom-field-for-wp-job-manager-pro/" target="_blank">Get Pro For Radio, Select, Date, File and checkbox field</a>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Location</label></th>
-								<td>
-									<select name="field_location_cfwjm" class="field_location_cfwjm">
-										<option value="job">Job</option>
-										<option value="company">Company</option>
-									</select>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Name</label></th>
-								<td>
-									<input type="text" required class="regular-text" name="field_name_cfwjm">
-								</td>
-							</tr>
-							<tr class="cfwjm_option" style="display: none;">
-								<th scope="row"><label>Field Option</label></th>
-								<td>
-									<textarea  class="regular-text textheighs" name="field_option_cfwjm" placeholder="Option 1&#10;Option 2"></textarea>
-									<p class="description">Per Line add one Option</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Order Number</label></th>
-								<td>
-									<input type="number" required value="" class="regular-text" name="field_ordernumber_cfwjm">
-									<p class="description">Add digit where you can ordering field up down</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Show Location</label></th>
-								<td>
-									<select name="field_location_show_cfwjm" class="field_location_cfwjm">
-										<?php
-										foreach ($CFWJM_Global['display_loc_arr'] as $key_display_loc_arr => $value_display_loc_arr) {
-											echo '<option value="'.$key_display_loc_arr.'">'.$value_display_loc_arr.'</option>';
-										}
-										?>
-									</select>
-									<p class="description">This will be show where you need to show this field</p>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>Field Required</label></th>
-								<td>
-									<input type="checkbox"  class="regular-text" name="field_required_cfwjm" disabled>
-									<a href="https://www.codesmade.com/store/custom-field-for-wp-job-manager-pro/" target="_blank">Get Pro For Make Required Field</a>
-								</td>
-							</tr>
-							<tr>
-								<th scope="row"><label>OutPut</label></th>
-								<td>
-									<textarea  class="regular-text textheighs" name="field_output_cfwjm" placeholder='<div class="cfwjm_output"><strong>{label} : </strong>{value}</div>' disabled></textarea>
-									<p class="description">{label} = Field Name <br> {value}  = Field Value<br> <strong>If you not setup this field than default html format will be use</strong></p>
-									<a href="https://www.codesmade.com/store/custom-field-for-wp-job-manager-pro/" target="_blank">Get Pro For Make Output Frontend</a>
-								</td>
-							</tr>
-						</table>
-						
-						<p class="submit">
-							<input type="hidden" name="action" value="add_new_field_cfwjm">
-							<input type="submit" name="submit"  class="button button-primary" value="Save">
-						</p>
-					</form>
-				</div>
+		<div class="wrap">
+			<div class="headingmc">
+				<h1 class="wp-heading-inline"><?php _e('WP Job Manager Custom Field', 'cfwjm'); ?></h1>
+				<div class="about-text">
+			        <p>
+						Thank you for using our plugin! If you are satisfied, please reward it a full five-star <span style="color:#ffb900">★★★★★</span> rating.                        <br>
+			            <a href="https://wordpress.org/support/plugin/custom-field-for-wp-job-manager/reviews/" target="_blank">Reviews</a>
+			            | <a href="https://www.codesmade.com/contact-us/" target="_blank">24x7 Support</a>
+			        </p>
+			    </div>
 			</div>
+			<div class="notice notice-success"> 
+		            <p>ShortCode <strong>[cm_fieldshow key='_field_cfwjm13' job_id='15']</strong> in that key is mandatory and if you not add <strong>job_id</strong> than take default job post id. </p>
+		    </div>
+			<?php
+			echo '<div id="CFWJM-admin-root"></div>';
+			?>
+
 			
 		</div>
-<?php
-}
+
+
+	<?php
+	}
 
 
 

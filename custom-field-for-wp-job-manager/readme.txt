@@ -1,62 +1,94 @@
-=== Custom Field For WP Job Manager===
-Tested up to: 6.9
-Tags: Wp job Manager extra field, Wp job Manager, wp job manager field, custom  field wp job manager
+=== Custom Field For WP Job Manager ===
+Contributors: theme funda
+Tags: wp job manager, custom fields, job manager field editor, job board, job form builder
+Requires at least: 5.0
+Tested up to: 6.9.1
+Requires PHP: 7.4
+Stable tag: 1.5
 License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-3.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+The ultimate field editor for WP Job Manager. Easily add, edit, and manage custom job and company fields without any coding.
 
 == Description ==
 
-**Extra Field For WP Job Manager** allows you to quickly and easily add custom fields to the admin and frontend of WP Job Manager pages. All you need do is add the field name you want in [WP Job Manager](https://wpjobmanager.com/) via our initiative admin page. 
-
-[Demo](https://codesmade.com/demo/wpjobmanager/post-a-job/) | [Pro Version](https://www.codesmade.com/store/custom-field-for-wp-job-manager-pro/) | [Support](https://www.codesmade.com/contact-us/)
-
-Ex. if you need to add **salary field WP Job Manger**, addition job field you can add in **Custom field WP Job Manager**.
-
-**WP job manager add new fields** plugin giving you easy way to setup field in backend side as well frontend both site you can use plugin to config in your website. it also work as **wp job manager field editor**.	
-
-**WP Job Manager field editor** can be add on field to action field name and placeholder in **Custom Field For WP Job Manager**.
-
-**wp job manager add new fields** Normally by code you can add custom but by **Extra Field WP Job Manager** using mostly for this plugin.
-
-You can be **Editing Job Submission Fields** in Wp job manager for **WP Job Manager Field Editor**
-
-= Features =
-
-<ul>
-<li>One Click installation</li>
-<li>Text, Textarea, Fields Type support in WP Job Manager</li>
-<li>Job Submission Fields Support in add field</li>
-<li>Job Admin Fields in edit and update field</li>
-<li>Option with want to keep required or not</li>
-<li>Easy To use</li>
-<li>Auto Show Field on Single job page</li>
-<li>Custom Order Field</li>
-<li>Support Shotcode <strong>[cm_fieldshow key='_field_cfwjm13' job_id='15']</strong></li>
-</ul>
-
-#### FEATURES OF THE PRO VERSION
-
-<ul>
-<li>Select, Multi Select, Radio, Checkbox, Date, File, WPEditor Also Avaible</li>
-<li>Can be Make requied field</li>
-</ul>
-
-#### How To use Shortcode Custom Field For WP Job Manager
-**[cm_fieldshow key='_field_cfwjm13' job_id='15']** in that key is mandatory and if you not add **job_id** than take default job post id. 
-
-#### How To use Custom Field For WP Job Manager
-Go to admin in **Custom Field For WP Job Manager > Add New Field** there just you need to add field name and text field will be show automatically in WP Job Manager field in fronted and backend both side **Adding Custom Field on Job List**.
+**Custom Field For WP Job Manager** is a powerful, lightweight, and SEO-friendly field editor designed to give you full control over your job board's submission forms. Whether you need to add a "Salary Range," "Working Hours," or "Required Experience," this plugin makes it possible in seconds.
 
 
-<h4>Our More Plugins</h4>
+### Why use this plugin?
+Adding custom fields usually requires complex PHP coding and hooks. This plugin automates that entire process. It is built to be "developer-friendly" but "beginner-easy." It uses standard WP Job Manager filters (`submit_job_form_fields`) to ensure 100% compatibility with your theme and other add-ons.
 
-[Custom Field For WP Job Manager](https://wordpress.org/plugins/custom-field-for-wp-job-manager/) This plugin allows you to tailor job submission forms, capturing additional information specific to your needs. 
+### Essential Links
+* [🌐 Live Demo](https://codesmade.com/demo/wpjobmanager/post-a-job/)
+* [⚡ Upgrade to Pro](https://www.codesmade.com/store/custom-field-for-wp-job-manager-pro/)
+* [🛠️ Priority Support](https://www.codesmade.com/contact-us/)
 
-[Auto Location for WP Job Manager](https://wordpress.org/plugins/auto-location-for-wp-job-manager/) Enhance user experience by simplifying the job search process and enabling location-based filtering.
+== Features ==
 
-[Setup Default Featured Image](https://wordpress.org/plugins/setup-default-feature-image/) If no specific image is selected, the default will be displayed, ensuring a consistent look throughout your site.
+### 🛠️ 13+ Supported Field Types
+Create a truly unique job board with a wide variety of input types:
+* **Text & Textarea:** Perfect for titles, descriptions, or short notes.
+* **Number & Range:** Ideal for salaries or percentage scales. (Pro)
+* **Email, URL, & Telephone:** Capture contact info with built-in validation. (Pro)
+* **Select & Multiselect:** Create dropdowns for categories or skill sets. (Pro)
+* **Radio & Checkboxes:** Quick options for job types or "Agree to Terms." (Pro)
+* **File Uploads:** Allow candidates to upload resumes or portfolios. (Pro)
+* **WP Editor:** Enable the full WordPress Rich Text Editor for long descriptions. (Pro)
 
-[Post to Pdf](https://wordpress.org/plugins/post-to-pdf/) Convert your WordPress posts into PDF documents effortlessly with this plugin.
+### ⚙️ Per-Field Advanced Settings
+Every field you create comes with a suite of customization options:
+* **Custom Placeholders:** Guide your users on what to type.
+* **CSS Classes:** Easily style fields to match your theme’s design.
+* **Input Constraints:** Set Minimum, Maximum, and Step values for numeric data.
+* **Visibility Control:** Toggle visibility for "Frontend Forms" vs "Admin Meta Boxes."
+* **Custom Output:** Use `{label}` and `{value}` placeholders to display data exactly how you want on the listing page. (Pro)
 
-[Festival Snow Effect](https://wordpress.org/plugins/snow-effect/) Add a beautiful snow animation to your site, creating a festive atmosphere for holidays and special occasions.
+== How It Works ==
 
+1. **Create:** Go to the "Form Customizer" tab in your WP Admin.
+2. **Configure:** Click "Add Field," choose your type (e.g., Number), and set it as "Required."
+3. **Display:** The field automatically appears on your frontend job submission form.
+4. **View:** Once submitted, the data is displayed on the single job listing page using your custom format.
+
+== Shortcode ==
+
+You can display any saved custom field anywhere on your site using our flexible shortcode:
+
+`[cm_fieldshow key="_field_cfwjm13" job_id="123"]`
+
+* **key:** The meta key of your custom field (e.g., `_field_salary`).
+* **job_id:** (Optional) Provide a specific Job ID, or leave blank to auto-detect the current post.
+
+== Developer Notes ==
+
+For developers looking to extend the plugin:
+* **Storage:** Fields are stored as a Custom Post Type (`wpjmcf`).
+* **Meta:** All settings are stored as post meta using the `_cfwjm` suffix.
+* **Hooks:** We use the standard `submit_job_form_fields` filter
+
+== Frequently Asked Questions ==
+
+= Is this compatible with the latest WordPress version? =
+Yes! We regularly test and update the plugin to ensure compatibility with WordPress 6.x and 7.x.
+
+= Can I add fields to the Company form too? =
+Absolutely. Our Form Customizer supports both Job and Company field injection.
+
+= Does it support file uploads? =
+Yes, the 'File' field type allows users to upload documents directly through the frontend form.
+
+== Changelog ==
+
+= 1.6.0 =
+* NEW: Added support for Range and Telephone field types.
+* IMPROVED: Faster React-based admin interface.
+* FIXED: Validation bug on numeric 'step' attributes.
+
+= 1.5.0 =
+* Initial compatibility update for WP 6.9.
+* Minor CSS fixes for frontend form alignment.
+
+== Upgrade Notice ==
+
+= 1.6.0 =
+Recommended update for enhanced security and 2 new field types.

@@ -27,6 +27,19 @@ if ( ! defined( 'CFWJM_PLUGINURL' ) ) {
 	define( 'CFWJM_PLUGINURL', plugin_dir_url( __FILE__ ) );
 }
 
+
+add_filter( 'job_manager_locate_template', 'cfwjm_locate_template', 10, 3 );
+
+function cfwjm_locate_template( $template, $template_name, $template_path ) {
+
+    $plugin_path = plugin_dir_path( __FILE__ ) . 'templates/';
+
+    if ( file_exists( $plugin_path . $template_name ) ) {
+        $template = $plugin_path . $template_name;
+    }
+
+    return $template;
+}
 /* Auto-load all the necessary classes. */
 if( ! function_exists( 'cfwjm_class_auto_loader' ) ) {
 	
@@ -47,4 +60,5 @@ new CFWJM_Admin();
 new CFWJM_Frontend();
 new CFWJM_Shortcode();
 new CFWJM_Display();
-?>
+new CFWJM_API();
+new CFWJM_Admin_Renderers();
